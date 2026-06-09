@@ -1,4 +1,4 @@
-const CACHE = 'flightlog-v2';
+const CACHE = 'flightlog-v3';
 const ASSETS = [
   '.',
   'index.html',
