@@ -1,9 +1,10 @@
-const CACHE = 'flightlog-v1';
+const CACHE = 'flightlog-v2';
 const ASSETS = [
   '.',
   'index.html',
   'manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  'icon-192.png',
+  'icon-512.png',
   'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap'
 ];
 
@@ -26,8 +27,7 @@ self.addEventListener('fetch', e => {
     caches.match(e.request).then(cached => {
       if(cached) return cached;
       return fetch(e.request).then(response => {
-        // Cache external resources
-        if(e.request.url.startsWith('https://cdnjs') || e.request.url.startsWith('https://fonts')) {
+        if(e.request.url.startsWith('https://fonts')) {
           const clone = response.clone();
           caches.open(CACHE).then(cache => cache.put(e.request, clone));
         }
