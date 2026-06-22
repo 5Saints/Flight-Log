@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flight Log">
+<meta name="theme-color" content="#04080f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Flight Log</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
@@ -42,14 +48,26 @@
   #panels.open { max-height:260px; }
   #panel-add { padding:16px; display:none; flex-direction:column; gap:12px; }
   #panel-add.active { display:flex; }
-  .form-row { display:flex; gap:10px; }
-  .form-group { flex:1; display:flex; flex-direction:column; gap:4px; }
+  /* ── MODAL SHEET ── */
+  #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:40; backdrop-filter:blur(2px); }
+  #modal-overlay.open { display:block; }
+  #modal-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); border-radius:20px 20px 0 0; z-index:50; transform:translateY(100%); transition:transform 0.35s cubic-bezier(0.32,0,0,1); padding:0 20px 32px; }
+  #modal-sheet.open { transform:translateY(0); }
+  #modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:14px auto 18px; }
+  #modal-title { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; text-align:center; }
+  #quick-label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; margin-bottom:8px; display:none; }
+  #quick-airports { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .ap-chip { background:var(--bg); border:1px solid var(--border); color:var(--accent); font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:1px; padding:8px 14px; border-radius:20px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ap-chip:active { background:var(--accent); color:var(--bg); }
+  .form-row { display:flex; gap:12px; }
+  .form-group { flex:1; display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
   .form-group label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; }
-  .form-group input { background:var(--bg); border:1px solid var(--border); color:var(--text); padding:8px 10px; font-family:'Share Tech Mono',monospace; font-size:14px; text-transform:uppercase; letter-spacing:2px; border-radius:2px; outline:none; width:100%; transition:border-color 0.2s; }
+  .form-group input { background:var(--bg); border:1px solid var(--border); color:var(--text); padding:14px; font-family:'Share Tech Mono',monospace; font-size:18px; text-transform:uppercase; letter-spacing:3px; border-radius:6px; outline:none; width:100%; transition:border-color 0.2s; min-height:52px; }
   .form-group input:focus { border-color:var(--accent); }
   .form-group input.error { border-color:#ff4444; }
-  #add-flight-btn { background:var(--accent); color:var(--bg); border:none; padding:10px; font-family:'Barlow Condensed',sans-serif; font-size:15px; font-weight:700; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border-radius:2px; }
-  #form-error { font-family:'Share Tech Mono',monospace; font-size:11px; color:#ff4444; letter-spacing:1px; min-height:16px; }
+  .form-group input[type="date"] { font-size:16px; letter-spacing:1px; color:var(--text); }
+  #add-flight-btn { background:var(--accent); color:var(--bg); border:none; padding:16px; font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border-radius:8px; width:100%; min-height:56px; margin-top:4px; }
+  #form-error { font-family:'Share Tech Mono',monospace; font-size:11px; color:#ff4444; letter-spacing:1px; min-height:16px; margin-bottom:8px; }
   #panel-list { display:none; flex-direction:column; overflow-y:auto; max-height:260px; }
   #panel-list.active { display:flex; }
   .flight-item { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border); gap:12px; }
@@ -58,7 +76,9 @@
   .flight-date-item { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); }
   .flight-miles { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--accent2); }
   .empty-state { padding:24px 16px; text-align:center; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:2px; }
-  .delete-btn { background:none; border:1px solid #442222; color:#884444; font-size:12px; width:24px; height:24px; border-radius:2px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .edit-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:13px; width:30px; height:30px; border-radius:2px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .edit-btn:hover { border-color:var(--accent); color:var(--accent); }
+  .delete-btn { background:none; border:1px solid #442222; color:#884444; font-size:12px; width:30px; height:30px; border-radius:2px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
   .delete-btn:hover { background:#3a1010; border-color:#e03030; color:#e03030; }
   .static-arc { fill:none; stroke:var(--accent); stroke-width:1.2; stroke-linecap:round; opacity:0.25; }
   .stats-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:#8ab4c4; letter-spacing:1px; margin-top:3px; }
@@ -113,16 +133,35 @@
   <button class="io-btn" id="export-btn">&#x2193; EXPORT</button>
   <label class="io-btn" style="text-align:center;cursor:pointer;" id="import-label">&#x2191; IMPORT<input type="file" id="import-input" accept=".json,.xlsx" style="display:none"></label>
 </div>
-<div id="panels">
-  <div id="panel-add" class="active">
-    <div class="form-row">
-      <div class="form-group"><label>From</label><input type="text" id="input-from" maxlength="3" placeholder="DFW"></div>
-      <div class="form-group"><label>To</label><input type="text" id="input-to" maxlength="3" placeholder="LAX"></div>
-      <div class="form-group" style="flex:2"><label>Date</label><input type="date" id="input-date" style="letter-spacing:1px;font-size:13px"></div>
+<!-- Modal sheet for adding flights -->
+<div id="modal-overlay"></div>
+<div id="modal-sheet">
+  <div id="modal-handle"></div>
+  <div id="modal-title">Log a Flight</div>
+  <div id="quick-label">Recent Airports</div>
+  <div id="quick-airports"></div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>From</label>
+      <input type="text" id="input-from" maxlength="3" placeholder="DFW"
+        autocomplete="off" autocorrect="off" spellcheck="false">
     </div>
-    <div id="form-error"></div>
-    <button id="add-flight-btn">Add Flight</button>
+    <div class="form-group">
+      <label>To</label>
+      <input type="text" id="input-to" maxlength="3" placeholder="LAX"
+        autocomplete="off" autocorrect="off" spellcheck="false">
+    </div>
   </div>
+  <div class="form-group">
+    <label>Date</label>
+    <input type="date" id="input-date">
+  </div>
+  <div id="form-error"></div>
+  <button id="add-flight-btn">Add Flight</button>
+</div>
+
+<div id="panels">
+  <div id="panel-add" style="display:none;"></div>
   <div id="panel-list">
     <div class="empty-state" id="empty-state">NO FLIGHTS LOGGED</div>
   </div>
@@ -545,8 +584,8 @@ document.getElementById('play-btn').addEventListener('click',()=>{
 
 // ─── FORM ───────────────────────────────────────────────────────────────────
 function addFlight(){
-  const from=document.getElementById('input-from').value.trim().toUpperCase();
-  const to=document.getElementById('input-to').value.trim().toUpperCase();
+  const from=document.getElementById('input-from').value.trim().toUpperCase().replace(/[^A-Z]/g,'');
+  const to=document.getElementById('input-to').value.trim().toUpperCase().replace(/[^A-Z]/g,'');
   const date=document.getElementById('input-date').value;
   const err=document.getElementById('form-error');
   err.textContent='';
@@ -557,17 +596,33 @@ function addFlight(){
   if(from===to){err.textContent='Origin and destination must differ';return;}
   const year=parseInt(date.split('-')[0]);
   const miles=getMiles(AIRPORTS[from],AIRPORTS[to]);
-  if(!allFlights[year])allFlights[year]=[];
-  allFlights[year].push({from,to,date,miles});
-  saveFlights(allFlights);
-  if(!Array.from(yearSelect.options).some(o=>parseInt(o.value)===year)){populateYears();yearSelect.value=year;currentYear=year;}
+
+  if(editingYear !== null && editingIdx !== null){
+    // Update existing flight
+    allFlights[editingYear][editingIdx] = {from, to, date, miles};
+    saveFlights(allFlights);
+  } else {
+    // Add new flight
+    if(!allFlights[year])allFlights[year]=[];
+    allFlights[year].push({from,to,date,miles});
+    saveFlights(allFlights);
+    if(!Array.from(yearSelect.options).some(o=>parseInt(o.value)===year)){populateYears();yearSelect.value=year;currentYear=year;}
+  }
+
   if(year===currentYear){updateMileCount(getYearFlights(currentYear).reduce((s,f)=>s+f.miles,0));renderList();}
   renderVisitedAirports();
   document.getElementById('input-from').value='';
   document.getElementById('input-to').value='';
   document.getElementById('input-date').value='';
+  resetModal();
+  closeModal();
 }
 document.getElementById('add-flight-btn').addEventListener('click',addFlight);
+// Track which field is focused for chip targeting
+let activeChipField = 'from';
+document.getElementById('input-from').addEventListener('focus',()=>{ activeChipField='from'; });
+document.getElementById('input-to').addEventListener('focus',()=>{ activeChipField='to'; });
+
 ['input-from','input-to'].forEach(id=>document.getElementById(id).addEventListener('input',e=>e.target.value=e.target.value.toUpperCase()));
 document.getElementById('input-from').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('input-to').focus();});
 document.getElementById('input-to').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('input-date').focus();});
@@ -575,6 +630,9 @@ document.getElementById('input-date').addEventListener('keydown',e=>{if(e.key===
 
 // ─── LIST ───────────────────────────────────────────────────────────────────
 function formatDate(d){const[y,m,day]=d.split('-');return['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][parseInt(m)-1]+' '+day;}
+let editingYear = null;
+let editingIdx  = null;
+
 function deleteFlight(year, idx){
   allFlights[year].splice(idx,1);
   if(!allFlights[year].length) delete allFlights[year];
@@ -584,12 +642,30 @@ function deleteFlight(year, idx){
   renderVisitedAirports();
 }
 
+function openEditModal(year, idx){
+  const f = allFlights[year][idx];
+  editingYear = year;
+  editingIdx  = idx;
+  document.getElementById('input-from').value = f.from;
+  document.getElementById('input-to').value   = f.to;
+  document.getElementById('input-date').value  = f.date;
+  document.getElementById('modal-title').textContent = 'Edit Flight';
+  document.getElementById('add-flight-btn').textContent = 'Save Changes';
+  openModal();
+}
+
+function resetModal(){
+  editingYear = null;
+  editingIdx  = null;
+  document.getElementById('modal-title').textContent = 'Log a Flight';
+  document.getElementById('add-flight-btn').textContent = 'Add Flight';
+}
+
 function renderList(){
   const panel=document.getElementById('panel-list');
   Array.from(panel.querySelectorAll('.flight-item')).forEach(el=>el.remove());
   const flights=getYearFlights(currentYear);
   document.getElementById('empty-state').style.display=flights.length?'none':'block';
-  // Map sorted flights back to original indices for deletion
   const raw=allFlights[currentYear]||[];
   flights.forEach(f=>{
     const rawIdx=raw.findIndex(r=>r.from===f.from&&r.to===f.to&&r.date===f.date);
@@ -601,18 +677,90 @@ function renderList(){
         <div class="flight-date-item">${formatDate(f.date)}</div>
         <div class="flight-miles">${f.miles.toLocaleString()} mi</div>
       </div>
+      <button class="edit-btn" title="Edit">&#x270E;</button>
       <button class="delete-btn" title="Delete">&#x2715;</button>`;
+    div.querySelector('.edit-btn').addEventListener('click',()=>openEditModal(currentYear,rawIdx));
     div.querySelector('.delete-btn').addEventListener('click',()=>deleteFlight(currentYear,rawIdx));
     panel.appendChild(div);
   });
 }
 
+// ─── MODAL SHEET ────────────────────────────────────────────────────────────
+const modalOverlay = document.getElementById('modal-overlay');
+const modalSheet   = document.getElementById('modal-sheet');
+
+function getFrequentAirports(){
+  const counts={};
+  Object.values(allFlights).forEach(flights=>{
+    flights.forEach(f=>{
+      counts[f.from]=(counts[f.from]||0)+1;
+      counts[f.to]=(counts[f.to]||0)+1;
+    });
+  });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(e=>e[0]).slice(0,12);
+}
+
+function renderChips(){
+  const container=document.getElementById('quick-airports');
+  const label=document.getElementById('quick-label');
+  const airports=getFrequentAirports();
+  container.innerHTML='';
+  if(!airports.length){ label.style.display='none'; container.style.display='none'; return; }
+  label.style.display='block'; container.style.display='flex';
+  airports.forEach(code=>{
+    const chip=document.createElement('button');
+    chip.type='button';
+    chip.className='ap-chip';
+    chip.textContent=code;
+    chip.addEventListener('click',()=>{
+      const targetId=activeChipField==='from'?'input-from':'input-to';
+      document.getElementById(targetId).value=code;
+      if(activeChipField==='from'){
+        activeChipField='to';
+        document.getElementById('input-to').focus();
+      } else {
+        activeChipField='from';
+        document.getElementById('input-date').focus();
+      }
+    });
+    container.appendChild(chip);
+  });
+}
+
+function openModal(){
+  activeChipField='from';
+  renderChips();
+  modalOverlay.classList.add('open');
+  modalSheet.classList.add('open');
+  setTimeout(()=>document.getElementById('input-from').focus(), 350);
+}
+
+function closeModal(){
+  modalOverlay.classList.remove('open');
+  modalSheet.classList.remove('open');
+  document.getElementById('form-error').textContent='';
+  ['input-from','input-to'].forEach(id=>document.getElementById(id).classList.remove('error'));
+  resetModal();
+}
+
+modalOverlay.addEventListener('click', closeModal);
+// Swipe down on handle to close
+document.getElementById('modal-handle').addEventListener('click', closeModal);
+
 // ─── TABS ───────────────────────────────────────────────────────────────────
 const panels=document.getElementById('panels');
-let activeTab='add';
+let activeTab='list';
+// Ensure list panel is active by default
+document.getElementById('panel-list').classList.add('active');
+document.querySelector('.tab-btn[data-tab="list"]').classList.add('active');
+document.querySelector('.tab-btn[data-tab="add"]').classList.remove('active');
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const tab=btn.dataset.tab;
+    if(tab==='add'){
+      openModal();
+      return;
+    }
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     if(tab===activeTab&&panels.classList.contains('open')){panels.classList.remove('open');return;}
@@ -810,6 +958,13 @@ currentYear=parseInt(yearSelect.value);
 document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
 updateMileCount(getYearFlights(currentYear).reduce((s,f)=>s+f.miles,0));
 renderVisitedAirports();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js');
+  });
+}
 </script>
 </body>
 </html>
