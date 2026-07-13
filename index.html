@@ -534,6 +534,7 @@ function setPlayBtn(state){
 function stopPlayback(){
   if(animFrame){ cancelAnimationFrame(animFrame); animFrame=null; }
   drawnRoutes.clear();
+  hideAllLabels();
   playbackActive=false;
   playbackPaused=false;
   pb_idx=0; pb_acc=0; pb_flights=[];
@@ -556,6 +557,7 @@ function pbPlayFlight(){
     document.getElementById('flight-label').textContent='';
     document.getElementById('flight-date').textContent='';
     planeDot.style.display='none';
+    hideAllLabels();
     updateMileCount(pb_acc);
     setTimeout(()=>{ clearPlaybackArcs(); }, 2200);
     return;
