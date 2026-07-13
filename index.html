@@ -20,69 +20,72 @@
   * { box-sizing:border-box; margin:0; padding:0; }
   body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',sans-serif; height:100dvh; overflow:hidden; display:flex; flex-direction:column; }
   #header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
-  #header h1 { font-family:'Share Tech Mono',monospace; font-size:14px; letter-spacing:3px; color:var(--accent); }
-  #year-selector select { background:var(--bg); color:var(--accent); border:1px solid var(--accent); padding:4px 8px; font-family:'Share Tech Mono',monospace; font-size:13px; border-radius:2px; outline:none; }
+  #header h1 { font-family:'Share Tech Mono',monospace; font-size:16px; letter-spacing:3px; color:var(--accent); }
+  #year-selector select { background:var(--bg); color:var(--accent); border:1.5px solid var(--accent); padding:8px 10px; font-family:'Share Tech Mono',monospace; font-size:15px; border-radius:4px; outline:none; min-height:38px; }
   #map-container { flex:1; position:relative; overflow:hidden; background:#020a12; padding-bottom:70px; }
   #map-svg { width:100%; height:100%; display:block; }
   .state { fill:var(--land); stroke:var(--land-border); stroke-width:0.6; stroke-linejoin:round; }
   .flight-arc { fill:none; stroke:var(--accent); stroke-width:2; stroke-linecap:round; }
   .visited-dot { fill:var(--accent); opacity:0.9; }
   .visited-label { font-family:'Share Tech Mono',monospace; font-size:7px; fill:var(--accent); opacity:0.8; letter-spacing:0.5px; pointer-events:none; }
-  #mileage-overlay { position:absolute; top:12px; left:12px; pointer-events:none; background:rgba(4,8,15,0.72); border:1px solid var(--border); border-radius:4px; padding:10px 14px; }
-  .mile-label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; }
-  .mile-count { font-family:'Share Tech Mono',monospace; font-size:28px; color:var(--accent); line-height:1; text-shadow:0 0 16px rgba(0,200,255,0.5); }
+  #mileage-overlay { position:absolute; top:12px; left:12px; pointer-events:none; background:rgba(4,8,15,0.88); border:1.5px solid #2a4a6a; border-radius:6px; padding:12px 16px; }
+  .mile-label { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text); letter-spacing:2px; }
+  .mile-count { font-family:'Share Tech Mono',monospace; font-size:32px; color:var(--accent); line-height:1; text-shadow:0 0 16px rgba(0,200,255,0.4); }
   #playback-bar { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(transparent,rgba(4,8,15,0.96)); padding:12px 16px 16px; display:flex; flex-direction:column; gap:8px; }
   #playback-info { display:flex; justify-content:space-between; }
   #flight-label { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--accent); letter-spacing:2px; margin-top:4px; min-height:0; }
-  #flight-date { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); }
+  #flight-date { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text); letter-spacing:2px; }
   #playback-controls { display:flex; align-items:center; gap:10px; }
-  #play-btn { background:var(--accent); color:var(--bg); border:none; width:36px; height:36px; border-radius:50%; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  #play-btn:disabled { background:var(--muted); cursor:default; }
+  #play-btn { background:var(--accent); color:var(--bg); border:none; width:44px; height:44px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  #stop-btn { background:none; border:1.5px solid var(--muted); color:var(--muted); width:36px; height:36px; border-radius:50%; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; }
+  #stop-btn:not([disabled]):hover { border-color:#e03030; color:#e03030; }
+  #stop-btn:disabled { opacity:0.3; cursor:default; }
+  #speed-label { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text); letter-spacing:1px; flex-shrink:0; }
   #speed-label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:1px; flex-shrink:0; }
   #speed-slider { flex:1; -webkit-appearance:none; height:2px; background:var(--border); outline:none; border-radius:2px; }
   #speed-slider::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--accent); cursor:pointer; }
-  #tab-bar { display:flex; border-top:1px solid var(--border); background:var(--surface); flex-shrink:0; position:relative; z-index:10; }
-  .tab-btn { flex:1; padding:10px; background:none; border:none; color:var(--muted); font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:600; letter-spacing:2px; text-transform:uppercase; cursor:pointer; border-top:2px solid transparent; transition:all 0.2s; }
+  #tab-bar { display:flex; border-top:1.5px solid #2a4a6a; background:var(--surface); flex-shrink:0; position:relative; z-index:10; }
+  .tab-btn { flex:1; padding:13px 10px; background:none; border:none; color:#8ab4c4; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:600; letter-spacing:2px; text-transform:uppercase; cursor:pointer; border-top:2px solid transparent; transition:all 0.2s; }
   .tab-btn.active { color:var(--accent); border-top-color:var(--accent); }
   #panels { flex-shrink:0; background:var(--surface); border-top:1px solid var(--border); overflow:hidden; max-height:0; transition:max-height 0.3s ease; }
   #panels.open { max-height:260px; }
   #panel-add { padding:16px; display:none; flex-direction:column; gap:12px; }
   #panel-add.active { display:flex; }
   /* ── MODAL SHEET ── */
-  #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:40; backdrop-filter:blur(2px); }
+  #modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.82); z-index:40; }
   #modal-overlay.open { display:block; }
-  #modal-sheet { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); border-radius:20px 20px 0 0; z-index:50; transform:translateY(100%); transition:transform 0.35s cubic-bezier(0.32,0,0,1); padding:0 20px 32px; }
+  #modal-sheet { position:fixed; bottom:0; left:0; right:0; background:#080e1a; border-top:2px solid var(--accent); border-radius:20px 20px 0 0; z-index:50; transform:translateY(100%); transition:transform 0.35s cubic-bezier(0.32,0,0,1); padding:0 20px 36px; }
   #modal-sheet.open { transform:translateY(0); }
-  #modal-handle { width:40px; height:4px; background:var(--border); border-radius:2px; margin:14px auto 18px; }
-  #modal-title { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:3px; text-transform:uppercase; margin-bottom:12px; text-align:center; }
-  #quick-label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; margin-bottom:8px; display:none; }
+  #modal-handle { width:40px; height:4px; background:#2a3a4a; border-radius:2px; margin:14px auto 16px; }
+  #modal-title { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--accent); letter-spacing:3px; text-transform:uppercase; margin-bottom:16px; text-align:center; }
+  #quick-label { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text); letter-spacing:2px; margin-bottom:10px; display:none; }
   #quick-airports { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
-  .ap-chip { background:var(--bg); border:1px solid var(--border); color:var(--accent); font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:1px; padding:8px 14px; border-radius:20px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ap-chip { background:#0d1e2e; border:1.5px solid var(--accent); color:var(--accent); font-family:'Share Tech Mono',monospace; font-size:14px; letter-spacing:1px; padding:10px 16px; border-radius:20px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .ap-chip:active { background:var(--accent); color:var(--bg); }
   .form-row { display:flex; gap:12px; }
   .form-group { flex:1; display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
-  .form-group label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; }
-  .form-group input { background:var(--bg); border:1px solid var(--border); color:var(--text); padding:14px; font-family:'Share Tech Mono',monospace; font-size:18px; text-transform:uppercase; letter-spacing:3px; border-radius:6px; outline:none; width:100%; transition:border-color 0.2s; min-height:52px; }
+  .form-group label { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text); letter-spacing:2px; }
+  .form-group input { background:#0d1e2e; border:1.5px solid #2a4a6a; color:var(--text); padding:14px; font-family:'Share Tech Mono',monospace; font-size:18px; text-transform:uppercase; letter-spacing:3px; border-radius:6px; outline:none; width:100%; transition:border-color 0.2s; min-height:52px; }
   .form-group input:focus { border-color:var(--accent); }
   .form-group input.error { border-color:#ff4444; }
   .form-group input[type="date"] { font-size:16px; letter-spacing:1px; color:var(--text); }
   #add-flight-btn { background:var(--accent); color:var(--bg); border:none; padding:16px; font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border-radius:8px; width:100%; min-height:56px; margin-top:4px; }
-  #form-error { font-family:'Share Tech Mono',monospace; font-size:11px; color:#ff4444; letter-spacing:1px; min-height:16px; margin-bottom:8px; }
+  #form-error { font-family:'Share Tech Mono',monospace; font-size:12px; color:#ff6666; letter-spacing:1px; min-height:18px; margin-bottom:6px; }
   #panel-list { display:none; flex-direction:column; overflow-y:auto; max-height:260px; }
   #panel-list.active { display:flex; }
-  .flight-item { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border); gap:12px; }
-  .flight-route { font-family:'Share Tech Mono',monospace; font-size:14px; color:var(--accent); letter-spacing:2px; flex:1; }
+  .flight-item { display:flex; align-items:center; padding:14px 16px; border-bottom:1px solid #1a2a3a; gap:12px; min-height:58px; }
+  .flight-route { font-family:'Share Tech Mono',monospace; font-size:16px; color:var(--accent); letter-spacing:2px; flex:1; }
   .flight-meta { display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
-  .flight-date-item { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); }
-  .flight-miles { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--accent2); }
-  .empty-state { padding:24px 16px; text-align:center; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:2px; }
-  .edit-btn { background:none; border:1px solid var(--border); color:var(--muted); font-size:13px; width:30px; height:30px; border-radius:2px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
-  .edit-btn:hover { border-color:var(--accent); color:var(--accent); }
-  .delete-btn { background:none; border:1px solid #442222; color:#884444; font-size:12px; width:30px; height:30px; border-radius:2px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
-  .delete-btn:hover { background:#3a1010; border-color:#e03030; color:#e03030; }
+  .flight-date-item { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text); }
+  .flight-miles { font-family:'Share Tech Mono',monospace; font-size:13px; color:#ff8060; margin-top:3px; }
+  .empty-state { padding:32px 16px; text-align:center; font-family:'Share Tech Mono',monospace; font-size:13px; color:#8ab4c4; letter-spacing:2px; }
+  .edit-btn { background:none; border:1.5px solid #2a4a6a; color:#8ab4c4; font-size:15px; width:36px; height:36px; border-radius:4px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .edit-btn:active { border-color:var(--accent); color:var(--accent); }
+  .delete-btn { background:none; border:1.5px solid #553333; color:#cc6666; font-size:15px; width:36px; height:36px; border-radius:4px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+  .delete-btn:active { background:#3a1010; border-color:#e03030; color:#e03030; }
   .static-arc { fill:none; stroke:var(--accent); stroke-width:1.2; stroke-linecap:round; opacity:0.25; }
-  .stats-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:#8ab4c4; letter-spacing:1px; margin-top:3px; }
-  #date-overlay { position:absolute; top:12px; right:12px; text-align:right; pointer-events:none; background:rgba(4,8,15,0.72); border:1px solid var(--border); border-radius:4px; padding:10px 14px; }
+  .stats-val { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text); letter-spacing:1px; margin-top:4px; }
+  #date-overlay { position:absolute; top:12px; right:12px; text-align:right; pointer-events:none; background:rgba(4,8,15,0.88); border:1.5px solid #2a4a6a; border-radius:6px; padding:12px 16px; }
   #flight-date { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--accent); letter-spacing:2px; }
   #io-bar { display:flex; gap:8px; padding:0 16px 12px; background:var(--surface); }
   .io-btn { flex:1; background:none; border:1px solid var(--border); color:var(--muted); font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:2px; padding:6px; border-radius:2px; cursor:pointer; transition:all 0.2s; }
@@ -94,7 +97,7 @@
   <h1>Flight Log</h1>
   <div id="year-selector" style="display:flex;align-items:center;gap:6px;">
     <select id="year-select"></select>
-    <button id="add-year-btn" title="Add year" style="background:none;border:1px solid var(--accent);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:12px;padding:3px 7px;border-radius:2px;cursor:pointer;">+YR</button>
+    <button id="add-year-btn" title="Add year" style="background:none;border:1.5px solid var(--accent);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:14px;padding:7px 11px;border-radius:4px;cursor:pointer;min-height:38px;">+YR</button>
   </div>
 </div>
 <div id="map-container">
@@ -120,6 +123,7 @@
     <div id="playback-info"></div>
     <div id="playback-controls">
       <button id="play-btn">&#9654;</button>
+      <button id="stop-btn" title="Stop" disabled>&#9632;</button>
       <span id="speed-label">SPEED</span>
       <input type="range" id="speed-slider" min="1" max="5" value="3">
     </div>
@@ -321,6 +325,7 @@ function populateYears(){
   yearSelect.innerHTML=Array.from(years).sort((a,b)=>b-a).map(y=>`<option value="${y}"${y===currentYear?' selected':''}>${y}</option>`).join('');
 }
 yearSelect.addEventListener('change',()=>{
+  if(playbackActive || playbackPaused) stopPlayback();
   currentYear=parseInt(yearSelect.value);
   updateMileCount(getYearFlights(currentYear).reduce((s,f)=>s+f.miles,0));
   renderList();
@@ -506,10 +511,27 @@ function freezeArc(){
 
 function setPlayBtn(state){
   const btn=document.getElementById('play-btn');
-  if(state==='play')  { btn.innerHTML='&#9654;'; btn.disabled=false; }
-  if(state==='pause') { btn.innerHTML='&#10074;&#10074;'; btn.disabled=false; }
-  if(state==='done')  { btn.innerHTML='&#9654;'; btn.disabled=false; }
+  const stp=document.getElementById('stop-btn');
+  if(state==='play')  { btn.innerHTML='&#9654;'; btn.disabled=false; stp.disabled=true; }
+  if(state==='pause') { btn.innerHTML='&#10074;&#10074;'; btn.disabled=false; stp.disabled=false; }
+  if(state==='done')  { btn.innerHTML='&#9654;'; btn.disabled=false; stp.disabled=true; }
 }
+
+function stopPlayback(){
+  if(animFrame){ cancelAnimationFrame(animFrame); animFrame=null; }
+  playbackActive=false;
+  playbackPaused=false;
+  pb_idx=0; pb_acc=0; pb_flights=[];
+  clearArc();
+  clearPlaybackArcs();
+  document.getElementById('flight-label').textContent='';
+  document.getElementById('flight-date').textContent='';
+  planeDot.style.display='none';
+  setPlayBtn('done');
+  updateMileCount(getYearFlights(currentYear).reduce((s,f)=>s+f.miles,0));
+  renderVisitedAirports();
+}
+document.getElementById('stop-btn').addEventListener('click', stopPlayback);
 
 function pbPlayFlight(){
   if(pb_idx >= pb_flights.length){
@@ -526,12 +548,12 @@ function pbPlayFlight(){
   const f=pb_flights[pb_idx];
   document.getElementById('flight-label').textContent=`${f.from} \u2192 ${f.to}`;
   document.getElementById('flight-date').textContent=formatDate(f.date);
-  // Reveal both airports before the arc begins drawing
+  // Origin appears immediately; destination reveals only when arc lands
   addAirportMarker(f.from);
-  addAirportMarker(f.to);
   animateFlight(f.from, f.to,
     t=>{ document.getElementById('mile-count').textContent=Math.round(pb_acc+f.miles*t).toLocaleString(); },
     ()=>{
+      addAirportMarker(f.to);
       pb_acc+=f.miles; displayedMiles=pb_acc; pb_idx++;
       freezeArc();
       // Update flight count, airports, and hours with completed flights so far
