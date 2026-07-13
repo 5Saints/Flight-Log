@@ -37,9 +37,9 @@
   #flight-date { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text); letter-spacing:2px; }
   #playback-controls { display:flex; align-items:center; gap:10px; }
   #play-btn { background:var(--accent); color:var(--bg); border:none; width:44px; height:44px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  #stop-btn { background:none; border:1.5px solid var(--muted); color:var(--muted); width:36px; height:36px; border-radius:50%; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; }
-  #stop-btn:not([disabled]):hover { border-color:#e03030; color:#e03030; }
-  #stop-btn:disabled { opacity:0.3; cursor:default; }
+  #stop-btn { background:#1a0808; border:2px solid #cc3333; color:#ff6060; width:44px; height:44px; border-radius:50%; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; }
+  #stop-btn:not([disabled]):active { background:#cc3333; color:#ffffff; }
+  #stop-btn:disabled { opacity:0.25; cursor:default; }
   #speed-label { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text); letter-spacing:1px; flex-shrink:0; }
   #speed-label { font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:1px; flex-shrink:0; }
   #speed-slider { flex:1; -webkit-appearance:none; height:2px; background:var(--border); outline:none; border-radius:2px; }
@@ -62,6 +62,10 @@
   #quick-airports { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
   .ap-chip { background:#0d1e2e; border:1.5px solid var(--accent); color:var(--accent); font-family:'Share Tech Mono',monospace; font-size:14px; letter-spacing:1px; padding:10px 16px; border-radius:20px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .ap-chip:active { background:var(--accent); color:var(--bg); }
+  .ap-chip-fav { background:#1a1000; border:1.5px solid #c8a000; color:#c8a000; }
+  .ap-chip-fav:active { background:#c8a000; color:var(--bg); }
+  .ap-chip-rec { background:#0d1e2e; border:1.5px solid #2a4a6a; color:#8ab4c4; }
+  .ap-chip-rec:active { background:#2a4a6a; color:#ffffff; }
   .form-row { display:flex; gap:12px; }
   .form-group { flex:1; display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
   .form-group label { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text); letter-spacing:2px; }
@@ -576,6 +580,9 @@ document.getElementById('play-btn').addEventListener('click',()=>{
     pb_idx=0; pb_acc=0;
     playbackActive=true;
     playbackPaused=false;
+    // Close panels so map is fully visible during playback
+    const panels=document.getElementById('panels');
+    if(panels) panels.classList.remove('open');
     setPlayBtn('pause');
     clearPlaybackArcs();
     while(airportsLayer.firstChild) airportsLayer.removeChild(airportsLayer.firstChild);
@@ -711,7 +718,8 @@ function renderList(){
 const modalOverlay = document.getElementById('modal-overlay');
 const modalSheet   = document.getElementById('modal-sheet');
 
-function getFrequentAirports(){
+function getChipAirports(){
+  // Favorites: top 5 by total flight frequency across all years
   const counts={};
   Object.values(allFlights).forEach(flights=>{
     flights.forEach(f=>{
@@ -719,34 +727,77 @@ function getFrequentAirports(){
       counts[f.to]=(counts[f.to]||0)+1;
     });
   });
-  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(e=>e[0]).slice(0,12);
+  const favorites = Object.entries(counts)
+    .sort((a,b)=>b[1]-a[1]).map(e=>e[0]).slice(0,5);
+
+  // Recents: last 10 unique airports used, most recent last
+  const recent=[];
+  const allLegs=[];
+  Object.values(allFlights).forEach(flights=>{
+    flights.forEach(f=>allLegs.push({date:f.date,from:f.from,to:f.to}));
+  });
+  allLegs.sort((a,b)=>a.date.localeCompare(b.date));
+  const recentSet=new Set();
+  allLegs.forEach(f=>{
+    [f.from,f.to].forEach(code=>{
+      if(recentSet.has(code)) recentSet.delete(code);
+      recentSet.add(code);
+    });
+  });
+  // Convert to array — most recent at end, limit 10, exclude favorites
+  const recentArr=Array.from(recentSet).filter(c=>!favorites.includes(c)).slice(-10);
+
+  return { favorites, recents: recentArr };
+}
+
+function makeChip(code, className, onClick){
+  const chip=document.createElement('button');
+  chip.type='button';
+  chip.className='ap-chip ' + className;
+  chip.textContent=code;
+  chip.addEventListener('click', onClick);
+  return chip;
 }
 
 function renderChips(){
   const container=document.getElementById('quick-airports');
   const label=document.getElementById('quick-label');
-  const airports=getFrequentAirports();
+  const {favorites, recents}=getChipAirports();
   container.innerHTML='';
-  if(!airports.length){ label.style.display='none'; container.style.display='none'; return; }
+  if(!favorites.length && !recents.length){
+    label.style.display='none'; container.style.display='none'; return;
+  }
   label.style.display='block'; container.style.display='flex';
-  airports.forEach(code=>{
-    const chip=document.createElement('button');
-    chip.type='button';
-    chip.className='ap-chip';
-    chip.textContent=code;
-    chip.addEventListener('click',()=>{
-      const targetId=activeChipField==='from'?'input-from':'input-to';
-      document.getElementById(targetId).value=code;
-      if(activeChipField==='from'){
-        activeChipField='to';
-        document.getElementById('input-to').focus();
-      } else {
-        activeChipField='from';
-        document.getElementById('input-date').focus();
-      }
-    });
-    container.appendChild(chip);
-  });
+
+  const tapChip = code => {
+    const targetId=activeChipField==='from'?'input-from':'input-to';
+    document.getElementById(targetId).value=code;
+    if(activeChipField==='from'){
+      activeChipField='to';
+      document.getElementById('input-to').focus();
+    } else {
+      activeChipField='from';
+      document.getElementById('input-date').focus();
+    }
+  };
+
+  // Favorites section
+  if(favorites.length){
+    const favLabel=document.createElement('div');
+    favLabel.style.cssText='width:100%;font-family:Share Tech Mono,monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:4px;';
+    favLabel.textContent='FAVORITES';
+    container.appendChild(favLabel);
+    favorites.forEach(code=>container.appendChild(makeChip(code,'ap-chip-fav',()=>tapChip(code))));
+  }
+
+  // Recents section
+  if(recents.length){
+    const recLabel=document.createElement('div');
+    recLabel.style.cssText='width:100%;font-family:Share Tech Mono,monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin:8px 0 4px;';
+    recLabel.textContent='RECENT';
+    container.appendChild(recLabel);
+    recents.forEach(code=>container.appendChild(makeChip(code,'ap-chip-rec',()=>tapChip(code))));
+  }
 }
 
 function openModal(){
