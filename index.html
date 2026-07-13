@@ -503,13 +503,23 @@ function clearPlaybackArcs(){
   playbackArcs.length=0;
 }
 
+const drawnRoutes = new Set();
+
 function freezeArc(){
   if(currentArc){
-    currentArc.setAttribute('class','static-arc');
-    currentArc.removeAttribute('stroke-dasharray');
-    currentArc.removeAttribute('stroke-dashoffset');
-    playbackArcs.push(currentArc);
-    currentArc=null;
+    const f = pb_flights[pb_idx-1];
+    const key = f ? [f.from,f.to].sort().join('-') : null;
+    if(key && drawnRoutes.has(key)){
+      if(currentArc.parentNode) currentArc.parentNode.removeChild(currentArc);
+      currentArc=null;
+    } else {
+      if(key) drawnRoutes.add(key);
+      currentArc.setAttribute('class','static-arc');
+      currentArc.removeAttribute('stroke-dasharray');
+      currentArc.removeAttribute('stroke-dashoffset');
+      playbackArcs.push(currentArc);
+      currentArc=null;
+    }
   }
 }
 
@@ -523,6 +533,7 @@ function setPlayBtn(state){
 
 function stopPlayback(){
   if(animFrame){ cancelAnimationFrame(animFrame); animFrame=null; }
+  drawnRoutes.clear();
   playbackActive=false;
   playbackPaused=false;
   pb_idx=0; pb_acc=0; pb_flights=[];
@@ -585,6 +596,7 @@ document.getElementById('play-btn').addEventListener('click',()=>{
     if(panels) panels.classList.remove('open');
     setPlayBtn('pause');
     clearPlaybackArcs();
+    drawnRoutes.clear();
     while(airportsLayer.firstChild) airportsLayer.removeChild(airportsLayer.firstChild);
     drawHomeMarker();
     updateMileCount(0, []);
