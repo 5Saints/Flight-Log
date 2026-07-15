@@ -10,6 +10,14 @@
   },
   "homepage": "https://5saints.github.io/Flight-Log",
   "scripts": {
-    "start": "python3 -m http.server 8000"
+    "start": "python3 -m http.server 8000",
+    "build:www": "node scripts/build-www.js",
+    "cap:sync": "npm run build:www && npx cap sync",
+    "ios:open": "npm run cap:sync && npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2"
   }
 }

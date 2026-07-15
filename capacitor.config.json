@@ -1,0 +1,10 @@
+{
+  "appId": "com.saints5.flightlog",
+  "appName": "Flight Log",
+  "webDir": "www",
+  "backgroundColor": "#04080f",
+  "ios": {
+    "backgroundColor": "#04080f",
+    "contentInset": "always"
+  }
+}
