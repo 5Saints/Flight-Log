@@ -1,0 +1,15 @@
+{
+  "name": "flight-log",
+  "version": "1.0.0",
+  "description": "Personal air travel tracking Progressive Web App with an animated interactive US map.",
+  "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/5Saints/Flight-Log"
+  },
+  "homepage": "https://5saints.github.io/Flight-Log",
+  "scripts": {
+    "start": "python3 -m http.server 8000"
+  }
+}

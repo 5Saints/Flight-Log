@@ -1,0 +1,60 @@
+name: Deploy checklist
+
+# Guards the manual step most likely to be forgotten from the deploy
+# checklist in docs/TECHNICAL.md: bumping the service worker CACHE
+# version whenever index.html changes, so installed PWAs actually
+# pick up the new build instead of serving stale cached content.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate manifest.json is valid JSON
+        run: python3 -c "import json; json.load(open('manifest.json'))"
+
+      - name: Determine diff base
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "ref=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Require sw.js cache bump when index.html changes
+        env:
+          BASE_REF: ${{ steps.base.outputs.ref }}
+        run: |
+          # Skip the check on the initial commit of a branch (no valid base to diff against).
+          if [ -z "$BASE_REF" ] || ! git cat-file -e "$BASE_REF" 2>/dev/null; then
+            echo "No valid base commit to diff against, skipping."
+            exit 0
+          fi
+
+          if ! git diff --name-only "$BASE_REF" HEAD | grep -qx 'index.html'; then
+            echo "index.html unchanged, no cache bump required."
+            exit 0
+          fi
+
+          if git diff --name-only "$BASE_REF" HEAD | grep -qx 'sw.js'; then
+            old_cache=$(git show "$BASE_REF:sw.js" | grep -oE "CACHE = '[^']+'" || true)
+            new_cache=$(grep -oE "CACHE = '[^']+'" sw.js || true)
+            if [ -n "$old_cache" ] && [ "$old_cache" = "$new_cache" ]; then
+              echo "::error file=sw.js::index.html changed but the CACHE version string in sw.js is unchanged. Bump it (see docs/TECHNICAL.md#6.2)."
+              exit 1
+            fi
+            echo "sw.js CACHE version was updated."
+          else
+            echo "::error file=sw.js::index.html changed but sw.js was not touched. Bump the CACHE version in sw.js (see docs/TECHNICAL.md#6.2)."
+            exit 1
+          fi
