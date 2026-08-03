@@ -22,6 +22,13 @@
   #header { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; min-height:48px; }
   #header h1 { font-family:'Share Tech Mono',monospace; font-size:16px; letter-spacing:3px; color:var(--accent); }
   #year-selector select { background:var(--bg); color:var(--accent); border:1.5px solid var(--accent); padding:8px 10px; font-family:'Share Tech Mono',monospace; font-size:15px; border-radius:4px; outline:none; min-height:38px; }
+  #export-reminder { display:none; align-items:center; justify-content:space-between; gap:10px; padding:8px 16px; background:rgba(0,200,255,0.08); border-bottom:1px solid var(--accent); flex-shrink:0; }
+  #export-reminder.show { display:flex; }
+  #export-reminder-text { font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--text); letter-spacing:0.5px; }
+  #export-reminder-actions { display:flex; gap:16px; flex-shrink:0; }
+  #export-reminder-actions button { background:none; border:none; font-family:'Barlow Condensed',sans-serif; font-size:14px; font-weight:600; letter-spacing:1px; text-transform:uppercase; cursor:pointer; padding:4px 2px; }
+  #export-reminder-export { color:var(--accent); }
+  #export-reminder-dismiss { color:var(--muted); }
   #map-container { flex:1; position:relative; overflow:hidden; background:#020a12; padding-bottom:70px; }
   #map-svg { width:100%; height:100%; display:block; }
   .state { fill:var(--land); stroke:var(--land-border); stroke-width:0.6; stroke-linejoin:round; }
@@ -118,6 +125,13 @@
   <div id="year-selector" style="display:flex;align-items:center;gap:6px;">
     <select id="year-select"></select>
     <button id="add-year-btn" title="Add year" style="background:none;border:1.5px solid var(--accent);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:14px;padding:7px 11px;border-radius:4px;cursor:pointer;min-height:38px;">+YR</button>
+  </div>
+</div>
+<div id="export-reminder">
+  <span id="export-reminder-text">Back up your flight data</span>
+  <div id="export-reminder-actions">
+    <button id="export-reminder-export" type="button">Export</button>
+    <button id="export-reminder-dismiss" type="button">Later</button>
   </div>
 </div>
 <div id="map-container">
@@ -334,6 +348,23 @@ const AIRPORTS = {
 function loadFlights(){try{return JSON.parse(localStorage.getItem('flightlog_v3')||'{}')}catch(e){return{}}}
 function saveFlights(d){localStorage.setItem('flightlog_v3',JSON.stringify(d))}
 let allFlights=loadFlights();
+
+const EXPORT_LAST_KEY='flightlog_last_export';
+const EXPORT_SNOOZE_KEY='flightlog_export_snooze';
+const EXPORT_REMINDER_DAYS=30;
+const EXPORT_SNOOZE_DAYS=7;
+function totalFlightCount(){return Object.values(allFlights).reduce((s,arr)=>s+arr.length,0)}
+function checkExportReminder(){
+  if(totalFlightCount()===0) return;
+  const now=Date.now();
+  if(now<parseInt(localStorage.getItem(EXPORT_SNOOZE_KEY)||'0')) return;
+  const last=parseInt(localStorage.getItem(EXPORT_LAST_KEY)||'0');
+  const daysSince=last?(now-last)/86400000:Infinity;
+  if(daysSince<EXPORT_REMINDER_DAYS) return;
+  document.getElementById('export-reminder-text').textContent=last?`It's been ${Math.floor(daysSince)} days since your last export — back up your data`:"You haven't exported your flight data yet — back it up";
+  document.getElementById('export-reminder').classList.add('show');
+}
+
 function getYearFlights(y){return(allFlights[y]||[]).slice().sort((a,b)=>a.date.localeCompare(b.date))}
 
 // ─── YEAR ───────────────────────────────────────────────────────────────────
@@ -913,6 +944,15 @@ document.getElementById('export-btn').addEventListener('click',()=>{
   a.href=URL.createObjectURL(blob);
   a.download=`flightlog_${new Date().getFullYear()}.json`;
   a.click();
+  localStorage.setItem(EXPORT_LAST_KEY,String(Date.now()));
+  document.getElementById('export-reminder').classList.remove('show');
+});
+document.getElementById('export-reminder-export').addEventListener('click',()=>{
+  document.getElementById('export-btn').click();
+});
+document.getElementById('export-reminder-dismiss').addEventListener('click',()=>{
+  localStorage.setItem(EXPORT_SNOOZE_KEY,String(Date.now()+EXPORT_SNOOZE_DAYS*86400000));
+  document.getElementById('export-reminder').classList.remove('show');
 });
 
 // ─── IMPORT ──────────────────────────────────────────────────────────────────
@@ -1077,6 +1117,7 @@ currentYear=parseInt(yearSelect.value);
 document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
 updateMileCount(getYearFlights(currentYear).reduce((s,f)=>s+f.miles,0));
 renderVisitedAirports();
+checkExportReminder();
 </script>
 <script>
 if('serviceWorker' in navigator){
