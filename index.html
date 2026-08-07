@@ -67,12 +67,14 @@
   #modal-title { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--accent); letter-spacing:3px; text-transform:uppercase; margin-bottom:16px; text-align:center; }
   #quick-label { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--text); letter-spacing:2px; margin-bottom:10px; display:none; }
   #quick-airports { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
-  .ap-chip { background:#0d1e2e; border:1.5px solid var(--accent); color:var(--accent); font-family:'Share Tech Mono',monospace; font-size:14px; letter-spacing:1px; padding:10px 16px; border-radius:20px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .ap-chip { display:inline-flex; align-items:center; background:#0d1e2e; border:1.5px solid var(--accent); color:var(--accent); font-family:'Share Tech Mono',monospace; font-size:14px; letter-spacing:1px; padding:10px 16px; border-radius:20px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .ap-chip:active { background:var(--accent); color:var(--bg); }
   .ap-chip-fav { background:#1a1000; border:1.5px solid #c8a000; color:#c8a000; }
   .ap-chip-fav:active { background:#c8a000; color:var(--bg); }
   .ap-chip-rec { background:#0d1e2e; border:1.5px solid #2a4a6a; color:#8ab4c4; }
   .ap-chip-rec:active { background:#2a4a6a; color:#ffffff; }
+  .chip-star { display:inline-block; font-size:13px; line-height:1; opacity:0.55; padding:14px 4px 14px 10px; margin:-14px -4px -14px 0; }
+  .chip-star.active { opacity:1; }
   .form-row { display:flex; gap:12px; }
   .form-group { flex:1; display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
   .form-group label { font-family:'Share Tech Mono',monospace; font-size:13px; color:var(--text); letter-spacing:2px; }
@@ -80,6 +82,7 @@
   .form-group input:focus { border-color:var(--accent); }
   .form-group input.error { border-color:#ff4444; }
   .form-group input[type="date"] { font-size:16px; letter-spacing:1px; color:var(--text); }
+  .form-group input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.9); cursor:pointer; }
   #add-flight-btn { background:var(--accent); color:var(--bg); border:none; padding:16px; font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border-radius:8px; width:100%; min-height:56px; margin-top:4px; }
   #form-error { font-family:'Share Tech Mono',monospace; font-size:12px; color:#ff6666; letter-spacing:1px; min-height:18px; margin-bottom:6px; }
   #panel-list { display:none; flex-direction:column; overflow-y:auto; max-height:260px; }
@@ -347,6 +350,17 @@ const AIRPORTS = {
 function loadFlights(){try{return JSON.parse(localStorage.getItem('flightlog_v3')||'{}')}catch(e){return{}}}
 function saveFlights(d){localStorage.setItem('flightlog_v3',JSON.stringify(d))}
 let allFlights=loadFlights();
+
+const FAVORITE_AIRPORTS_KEY='flightlog_favorite_airports';
+function loadFavoriteAirports(){try{return new Set(JSON.parse(localStorage.getItem(FAVORITE_AIRPORTS_KEY)||'[]'))}catch(e){return new Set()}}
+function saveFavoriteAirports(){localStorage.setItem(FAVORITE_AIRPORTS_KEY,JSON.stringify(Array.from(favoriteAirports)))}
+let favoriteAirports=loadFavoriteAirports();
+function toggleFavorite(code){
+  if(favoriteAirports.has(code)) favoriteAirports.delete(code);
+  else favoriteAirports.add(code);
+  saveFavoriteAirports();
+  renderChips();
+}
 
 const EXPORT_LAST_KEY='flightlog_last_export';
 const EXPORT_SNOOZE_KEY='flightlog_export_snooze';
@@ -795,7 +809,7 @@ const modalOverlay = document.getElementById('modal-overlay');
 const modalSheet   = document.getElementById('modal-sheet');
 
 function getChipAirports(){
-  // Favorites: top 5 by total flight frequency across all years
+  // Favorites: user-tagged (see toggleFavorite), ordered by total flight frequency
   const counts={};
   Object.values(allFlights).forEach(flights=>{
     flights.forEach(f=>{
@@ -803,8 +817,8 @@ function getChipAirports(){
       counts[f.to]=(counts[f.to]||0)+1;
     });
   });
-  const favorites = Object.entries(counts)
-    .sort((a,b)=>b[1]-a[1]).map(e=>e[0]).slice(0,5);
+  const favorites = Array.from(favoriteAirports)
+    .sort((a,b)=>(counts[b]||0)-(counts[a]||0));
 
   // Recents: last 10 unique airports used, most recent last
   const recent=[];
@@ -821,16 +835,24 @@ function getChipAirports(){
     });
   });
   // Convert to array — most recent at end, limit 10, exclude favorites
-  const recentArr=Array.from(recentSet).filter(c=>!favorites.includes(c)).slice(-10);
+  const recentArr=Array.from(recentSet).filter(c=>!favoriteAirports.has(c)).slice(-10);
 
   return { favorites, recents: recentArr };
 }
 
-function makeChip(code, className, onClick){
+function makeChip(code, className, onClick, isFav){
   const chip=document.createElement('button');
   chip.type='button';
   chip.className='ap-chip ' + className;
-  chip.textContent=code;
+  const label=document.createElement('span');
+  label.textContent=code;
+  chip.appendChild(label);
+  const star=document.createElement('span');
+  star.className='chip-star'+(isFav?' active':'');
+  star.textContent=isFav?'★':'☆';
+  star.title=isFav?'Remove from favorites':'Add to favorites';
+  star.addEventListener('click', e=>{ e.stopPropagation(); toggleFavorite(code); });
+  chip.appendChild(star);
   chip.addEventListener('click', onClick);
   return chip;
 }
@@ -863,7 +885,7 @@ function renderChips(){
     favLabel.style.cssText='width:100%;font-family:Share Tech Mono,monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:4px;';
     favLabel.textContent='FAVORITES';
     container.appendChild(favLabel);
-    favorites.forEach(code=>container.appendChild(makeChip(code,'ap-chip-fav',()=>tapChip(code))));
+    favorites.forEach(code=>container.appendChild(makeChip(code,'ap-chip-fav',()=>tapChip(code),true)));
   }
 
   // Recents section
@@ -872,7 +894,7 @@ function renderChips(){
     recLabel.style.cssText='width:100%;font-family:Share Tech Mono,monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin:8px 0 4px;';
     recLabel.textContent='RECENT';
     container.appendChild(recLabel);
-    recents.forEach(code=>container.appendChild(makeChip(code,'ap-chip-rec',()=>tapChip(code))));
+    recents.forEach(code=>container.appendChild(makeChip(code,'ap-chip-rec',()=>tapChip(code),false)));
   }
 }
 
