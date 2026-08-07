@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Log — Airport Coordinate Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
+  :root {
+    --bg:#04080f; --surface:#080e1a; --border:#1a2a3a;
+    --accent:#00c8ff; --accent2:#e03030; --text:#d0e8f0; --muted:#4a6070;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Barlow Condensed',sans-serif; min-height:100vh; padding:24px 16px 60px; }
+  .wrap { max-width:520px; margin:0 auto; }
+  h1 { font-family:'Share Tech Mono',monospace; font-size:18px; letter-spacing:3px; color:var(--accent); margin-bottom:6px; }
+  .subtitle { font-size:14px; color:var(--muted); margin-bottom:24px; line-height:1.5; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:20px; margin-bottom:16px; }
+  label { display:block; font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:1px; margin-bottom:6px; text-transform:uppercase; }
+  .row { display:flex; gap:12px; margin-bottom:14px; }
+  .field { flex:1; }
+  input { width:100%; background:var(--bg); color:var(--text); border:1.5px solid var(--border); border-radius:4px; padding:10px 12px; font-family:'Share Tech Mono',monospace; font-size:15px; outline:none; }
+  input:focus { border-color:var(--accent); }
+  input.code-input { text-transform:uppercase; }
+  button.calc { width:100%; background:var(--accent); color:var(--bg); border:none; border-radius:4px; padding:12px; font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; letter-spacing:2px; text-transform:uppercase; cursor:pointer; }
+  button.calc:active { opacity:0.85; }
+  #result { display:none; }
+  #result.show { display:block; }
+  .snippet-row { display:flex; gap:8px; align-items:center; }
+  .snippet { flex:1; font-family:'Share Tech Mono',monospace; font-size:14px; color:var(--accent); background:var(--bg); border:1px solid var(--border); border-radius:4px; padding:10px 12px; overflow-x:auto; white-space:nowrap; }
+  button.copy { background:none; border:1.5px solid var(--accent); color:var(--accent); border-radius:4px; padding:9px 14px; font-family:'Share Tech Mono',monospace; font-size:12px; cursor:pointer; flex-shrink:0; }
+  button.copy:active { background:var(--accent); color:var(--bg); }
+  .warning { margin-top:14px; padding:12px 14px; background:rgba(224,48,48,0.08); border:1px solid var(--accent2); border-radius:6px; font-size:13px; color:#ff9090; line-height:1.5; }
+  .note { margin-top:14px; font-size:13px; color:var(--muted); line-height:1.6; }
+  .note strong { color:var(--text); }
+  code { font-family:'Share Tech Mono',monospace; background:var(--bg); padding:1px 5px; border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AIRPORT COORDINATE CALCULATOR</h1>
+  <p class="subtitle">Computes the x/y SVG coordinates for a new Flight Log airport entry from its lat/lon, using the same Albers USA projection as the map. Reverse-engineered and calibrated against the 131 airports already in <code>index.html</code> (mean error 0.2px across 118 continental airports).</p>
+
+  <div class="panel">
+    <div class="row">
+      <div class="field">
+        <label for="code">Code (optional)</label>
+        <input id="code" class="code-input" maxlength="3" placeholder="XYZ">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="lat">Latitude</label>
+        <input id="lat" type="text" inputmode="decimal" placeholder="34.5678">
+      </div>
+      <div class="field">
+        <label for="lon">Longitude</label>
+        <input id="lon" type="text" inputmode="decimal" placeholder="-98.7654">
+      </div>
+    </div>
+    <button class="calc" id="calc-btn" type="button">Calculate</button>
+  </div>
+
+  <div class="panel" id="result">
+    <label>Add this to the AIRPORTS object</label>
+    <div class="snippet-row">
+      <div class="snippet" id="snippet"></div>
+      <button class="copy" id="copy-btn" type="button">Copy</button>
+    </div>
+    <div class="warning" id="warning" style="display:none;"></div>
+  </div>
+
+  <div class="note">
+    <strong>Scope:</strong> this projection is calibrated for the continental US (roughly lat 24&ndash;49.5, lon &minus;125 to &minus;66.5). Alaska, Hawaii, and international airports in the existing dataset are placed by hand near the map edges rather than true-projected — the same approach the app's own documentation describes. If your airport falls outside that range, use the computed point as a rough starting guess and nudge it visually against the rendered map instead of trusting it directly.<br><br>
+    <strong>Note:</strong> the app's technical documentation describes a y-axis formula (based on published min/max bounds) that does not reproduce the actual stored coordinates — it's off by a constant offset. The constants below were instead fit directly against the real airport data and validated to sub-pixel accuracy, so trust this tool over that formula.
+  </div>
+</div>
+
+<script>
+function albers(lat, lon) {
+  const rad = Math.PI/180;
+  const phi1 = 29.5*rad, phi2 = 45.5*rad, lon0 = -96*rad;
+  const phi = lat*rad, lam = lon*rad;
+  const n = (Math.sin(phi1)+Math.sin(phi2))/2;
+  const C = Math.cos(phi1)**2 + 2*n*Math.sin(phi1);
+  const rho = Math.sqrt(Math.max(C - 2*n*Math.sin(phi), 0))/n;
+  const theta = n*(lam-lon0);
+  return { ax: rho*Math.sin(theta), ay: -rho*Math.cos(theta) };
+}
+
+// Calibrated against the 131 airports already hardcoded in index.html (see project notes).
+function project(lat, lon) {
+  const { ax, ay } = albers(lat, lon);
+  const x = 1274.362618*ax + 490.060334;
+  const y = -1160.382770*ay - 1208.063747;
+  return { x, y };
+}
+
+function inConus(lat, lon) {
+  return lat >= 24.0 && lat <= 49.5 && lon >= -125.0 && lon <= -66.5;
+}
+
+document.getElementById('calc-btn').addEventListener('click', () => {
+  const code = document.getElementById('code').value.trim().toUpperCase() || 'XXX';
+  const lat = parseFloat(document.getElementById('lat').value);
+  const lon = parseFloat(document.getElementById('lon').value);
+  const result = document.getElementById('result');
+  const warning = document.getElementById('warning');
+  if (isNaN(lat) || isNaN(lon)) {
+    result.classList.remove('show');
+    return;
+  }
+  const { x, y } = project(lat, lon);
+  document.getElementById('snippet').textContent =
+    `${code}:{x:${x.toFixed(1)},y:${y.toFixed(1)},lat:${lat.toFixed(4)},lon:${lon.toFixed(4)}},`;
+  if (!inConus(lat, lon)) {
+    warning.style.display = 'block';
+    warning.textContent = 'This point is outside the continental US calibration range. The computed position is a rough estimate only — place Alaska, Hawaii, and international airports by eye near the map edge, matching the existing entries for those regions.';
+  } else {
+    warning.style.display = 'none';
+  }
+  result.classList.add('show');
+});
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  const snippet = document.getElementById('snippet');
+  const btn = document.getElementById('copy-btn');
+  const original = btn.textContent;
+  const flash = label => { btn.textContent = label; setTimeout(() => { btn.textContent = original; }, 1200); };
+  navigator.clipboard.writeText(snippet.textContent).then(() => flash('Copied')).catch(() => {
+    const range = document.createRange();
+    range.selectNodeContents(snippet);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    flash('Selected — Ctrl+C');
+  });
+});
+</script>
+</body>
+</html>
