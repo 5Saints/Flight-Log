@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Picker">
+<meta name="theme-color" content="#04080f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Restaurant Picker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap');
+  :root {
+    --bg:#04080f; --surface:#080e1a; --border:#1a2a3a;
+    --accent:#00c8ff; --accent2:#e03030; --text:#d0e8f0; --muted:#4a6070;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; }
+  body {
+    background:var(--bg); color:var(--text); font-family:'Barlow Condensed',sans-serif;
+    height:100dvh; overflow:hidden; display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  }
+  #header {
+    display:flex; align-items:center; justify-content:center; padding:14px 16px;
+    border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; min-height:48px;
+  }
+  #header h1 { font-family:'Share Tech Mono',monospace; font-size:16px; letter-spacing:3px; color:var(--accent); }
+
+  #main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+  #result-area {
+    flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column;
+    padding:24px; text-align:center; gap:10px; min-height:0;
+  }
+  #result-label { font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:3px; color:var(--muted); text-transform:uppercase; }
+  #result-name {
+    font-size:38px; font-weight:700; line-height:1.15; color:var(--text);
+    word-break:break-word; max-width:100%;
+  }
+  #result-name.empty { color:var(--muted); font-size:20px; font-weight:400; }
+  #result-name.spinning { color:var(--accent); }
+
+  #pick-wrap { padding:8px 20px 20px; flex-shrink:0; }
+  #pick-btn {
+    width:100%; padding:20px; font-family:'Share Tech Mono',monospace; font-size:20px; font-weight:700;
+    letter-spacing:4px; text-transform:uppercase; color:var(--bg); background:var(--accent);
+    border:none; border-radius:12px; cursor:pointer;
+  }
+  #pick-btn:active { background:#00a0d0; }
+  #pick-btn:disabled { background:var(--border); color:var(--muted); cursor:default; }
+
+  #list-toggle {
+    flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
+    padding:12px 16px; border-top:1px solid var(--border); background:var(--surface); cursor:pointer;
+  }
+  #list-toggle span:first-child { font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
+  #list-toggle-count { font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--accent); }
+  #list-toggle-arrow { color:var(--muted); font-size:14px; transition:transform 0.2s; }
+  #list-toggle-arrow.open { transform:rotate(180deg); }
+
+  #list-panel {
+    flex-shrink:0; max-height:0; overflow:hidden; transition:max-height 0.25s ease;
+    background:var(--surface); border-top:1px solid var(--border);
+  }
+  #list-panel.open { max-height:45vh; overflow-y:auto; }
+
+  #add-row { display:flex; gap:8px; padding:12px 16px; }
+  #add-input {
+    flex:1; background:var(--bg); border:1.5px solid var(--border); border-radius:8px;
+    color:var(--text); font-family:'Barlow Condensed',sans-serif; font-size:16px; padding:10px 12px; outline:none;
+  }
+  #add-input:focus { border-color:var(--accent); }
+  #add-btn {
+    background:var(--accent); color:var(--bg); border:none; border-radius:8px; padding:0 18px;
+    font-family:'Share Tech Mono',monospace; font-size:14px; font-weight:700; cursor:pointer;
+  }
+
+  #items { padding:0 16px 16px; display:flex; flex-direction:column; gap:8px; }
+  .item-row {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px;
+  }
+  .item-row.last-picked { border-color:var(--accent); }
+  .item-name { font-size:16px; word-break:break-word; }
+  .item-del {
+    flex-shrink:0; background:none; border:none; color:var(--accent2); font-size:20px;
+    line-height:1; cursor:pointer; padding:4px 6px;
+  }
+  #empty-list-msg { padding:16px; text-align:center; color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+
+<div id="header"><h1>PICKER</h1></div>
+
+<div id="main">
+  <div id="result-area">
+    <div id="result-label">Tonight we're eating</div>
+    <div id="result-name" class="empty">Add some restaurants below, then hit pick.</div>
+  </div>
+
+  <div id="pick-wrap">
+    <button id="pick-btn" disabled>Pick</button>
+  </div>
+</div>
+
+<div id="list-toggle">
+  <span>Restaurants</span>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span id="list-toggle-count">0</span>
+    <span id="list-toggle-arrow">▲</span>
+  </div>
+</div>
+
+<div id="list-panel">
+  <div id="add-row">
+    <input id="add-input" type="text" placeholder="Add a restaurant…" autocomplete="off">
+    <button id="add-btn">Add</button>
+  </div>
+  <div id="items"></div>
+</div>
+
+<script>
+const STORAGE_KEY = 'restaurantPicker.list';
+const LAST_PICK_KEY = 'restaurantPicker.lastPick';
+
+let list = loadList();
+let lastPick = sessionStorage.getItem(LAST_PICK_KEY) || null;
+let spinTimer = null;
+
+const resultName = document.getElementById('result-name');
+const pickBtn = document.getElementById('pick-btn');
+const itemsEl = document.getElementById('items');
+const listToggle = document.getElementById('list-toggle');
+const listPanel = document.getElementById('list-panel');
+const listToggleArrow = document.getElementById('list-toggle-arrow');
+const listToggleCount = document.getElementById('list-toggle-count');
+const addInput = document.getElementById('add-input');
+const addBtn = document.getElementById('add-btn');
+
+function loadList() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveList() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+function render() {
+  listToggleCount.textContent = list.length;
+  pickBtn.disabled = list.length === 0;
+
+  itemsEl.innerHTML = '';
+  if (list.length === 0) {
+    const msg = document.createElement('div');
+    msg.id = 'empty-list-msg';
+    msg.textContent = 'No restaurants yet — add your first one above.';
+    itemsEl.appendChild(msg);
+  } else {
+    list.forEach((name, i) => {
+      const row = document.createElement('div');
+      row.className = 'item-row' + (name === lastPick ? ' last-picked' : '');
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'item-name';
+      nameEl.textContent = name;
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'item-del';
+      delBtn.textContent = '×';
+      delBtn.setAttribute('aria-label', 'Remove ' + name);
+      delBtn.addEventListener('click', () => removeItem(i));
+
+      row.appendChild(nameEl);
+      row.appendChild(delBtn);
+      itemsEl.appendChild(row);
+    });
+  }
+}
+
+function addItem() {
+  const name = addInput.value.trim();
+  if (!name) return;
+  list.push(name);
+  saveList();
+  addInput.value = '';
+  render();
+}
+
+function removeItem(index) {
+  const removed = list[index];
+  list.splice(index, 1);
+  if (removed === lastPick) {
+    lastPick = null;
+    sessionStorage.removeItem(LAST_PICK_KEY);
+  }
+  saveList();
+  render();
+}
+
+function pick() {
+  if (list.length === 0 || spinTimer) return;
+
+  let candidates = list;
+  if (list.length > 1 && lastPick) {
+    candidates = list.filter(name => name !== lastPick);
+  }
+
+  pickBtn.disabled = true;
+  resultName.classList.remove('empty');
+  resultName.classList.add('spinning');
+
+  const spinDuration = 700;
+  const spinInterval = 60;
+  const start = Date.now();
+
+  spinTimer = setInterval(() => {
+    resultName.textContent = list[Math.floor(Math.random() * list.length)];
+    if (Date.now() - start >= spinDuration) {
+      clearInterval(spinTimer);
+      spinTimer = null;
+
+      const choice = candidates[Math.floor(Math.random() * candidates.length)];
+      resultName.textContent = choice;
+      resultName.classList.remove('spinning');
+
+      lastPick = choice;
+      sessionStorage.setItem(LAST_PICK_KEY, choice);
+
+      pickBtn.disabled = false;
+      render();
+    }
+  }, spinInterval);
+}
+
+pickBtn.addEventListener('click', pick);
+addBtn.addEventListener('click', addItem);
+addInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') addItem();
+});
+
+listToggle.addEventListener('click', () => {
+  const open = listPanel.classList.toggle('open');
+  listToggleArrow.classList.toggle('open', open);
+});
+
+render();
+if (list.length === 0) {
+  listPanel.classList.add('open');
+  listToggleArrow.classList.add('open');
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js');
+  });
+}
+</script>
+</body>
+</html>
