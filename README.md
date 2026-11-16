@@ -43,7 +43,7 @@ The site is served by GitHub Pages from the `main` branch root. Pushing to `main
 
 DFW (Dallas-Fort Worth) is hardcoded as the home airport. It appears as the red marker on the map and as the placeholder in the entry form, so search `index.html` for `DFW` to change it.
 
-The map includes 131 airports. To add one, open `tools/airport-coords.html`, enter its latitude and longitude, and paste the generated line into the `AIRPORTS` object in `index.html`. The tool is calibrated for the continental US. Alaska, Hawaii, and international airports are placed by hand near the map edges.
+The map includes 132 airports. To add one, open `tools/airport-coords.html`, enter its latitude and longitude, and paste the generated line into the `AIRPORTS` object in `index.html`. The tool is calibrated for the continental US. Alaska, Hawaii, and international airports are placed by hand near the map edges.
 
 ## Technical notes
 
